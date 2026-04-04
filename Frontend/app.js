@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api/qr";
+const API_URL = "http://https://qr-backend-dg9e.onrender.com/api/qr";
 
 // ✅ Setup dropdown ONCE
 document.addEventListener("DOMContentLoaded", () => {
