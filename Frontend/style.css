@@ -1,0 +1,102 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+nav {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 15px 30px;
+    backdrop-filter: blur(10px);
+}
+
+#logo h2 {
+    font-size: 24px;
+    color: #38bdf8;
+    letter-spacing: 2px;
+}
+
+main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#main {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 30px;
+    border-radius: 15px;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    width: 350px;
+    text-align: center;
+}
+
+label {
+    font-size: 16px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+select, input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    font-size: 14px;
+}
+
+select {
+    background: #1e293b;
+    color: #fff;
+}
+
+input {
+    background: #0f172a;
+    color: #fff;
+}
+
+button {
+    margin-top: 15px;
+    padding: 10px;
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    background: #38bdf8;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+button:hover {
+    background: #0ea5e9;
+    transform: scale(1.05);
+}
+
+#qrcode {
+    margin-top: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+    opacity: 0.7;
+}
