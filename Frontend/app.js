@@ -1,51 +1,47 @@
 const API_URL = "http://localhost:3000/api/qr";
 
-// Keep your existing function
+// ✅ Setup dropdown ONCE
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("typeSelect").addEventListener("change", updateInput);
+});
+
+// ✅ UPDATE INPUT
 function updateInput() {
-  const select = document.getElementById('typeSelect');
-  const container = document.getElementById('inputContainer');
-  const type = select.value;
+  const type = document.getElementById("typeSelect").value;
+  const container = document.getElementById("inputContainer");
 
-  let html = '';
+  let html = "";
 
-  switch(type) {
-    case 'text':
-      html = '<input id="input" type="text" placeholder="Enter text here...">';
-      break;
-    case 'url':
-      html = '<input id="input" type="url" placeholder="https://example.com">';
-      break;
-    case 'image':
-      html = '<input id="input" type="file" accept="image/*">';
-      break;
-    case 'video':
-      html = '<input id="input" type="file" accept="video/*">';
-      break;
-    case 'audio':
-      html = '<input id="input" type="file" accept="audio/*">';
-      break;
-    case 'file':
-      html = '<input id="input" type="file">';
-      break;
-    default:
-      html = '<p>Select option</p>';
+  if (type === "text") {
+    html = `<input id="input" type="text" placeholder="Enter text">`;
+  } else if (type === "url") {
+    html = `<input id="input" type="url" placeholder="https://example.com">`;
+  } else {
+    html = `<input id="input" type="file">`;
   }
 
-  container.innerHTML = html + '<button onclick="generateQR()">Generate QR</button>';
+  container.innerHTML = `
+    ${html}
+    <button type="button" id="generateBtn">Generate QR</button>
+  `;
+
+  // ✅ Attach ONLY ONCE
+  document.getElementById("generateBtn").onclick = generateQR;
 }
 
-// 🔥 UPDATED generateQR
+// ✅ GENERATE QR
 async function generateQR() {
+  const type = document.getElementById("typeSelect").value;
+  const input = document.getElementById("input");
+  const qrDiv = document.getElementById("qrcode");
+
   try {
-    const type = document.getElementById('typeSelect').value;
-    const input = document.getElementById('input');
-    const qrContainer = document.getElementById('qrcode');
-
-    qrContainer.innerHTML = "Loading...";
-
     let res;
 
+    // TEXT / URL
     if (type === "text" || type === "url") {
+      if (!input.value) return alert("Enter value");
+
       res = await fetch(`${API_URL}/generate`, {
         method: "POST",
         headers: {
@@ -56,9 +52,12 @@ async function generateQR() {
           content: input.value
         })
       });
-    } else {
+
+    } 
+    // FILE
+    else {
       const file = input.files[0];
-      if (!file) return alert("Select file");
+      if (!file) return alert("Select a file");
 
       const formData = new FormData();
       formData.append("file", file);
@@ -69,38 +68,55 @@ async function generateQR() {
       });
     }
 
-    if (!res.ok) throw new Error("Server error");
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(err);
+      qrDiv.innerHTML = "Server error!";
+      return;
+    }
 
     const data = await res.json();
-    displayQR(data.qrCode);
+
+    // ✅ ONLY update once (NO clearing before)
+    qrDiv.innerHTML = `<img src="${data.qrCode}" width="200">`;
 
   } catch (err) {
     console.error(err);
-    document.getElementById('qrcode').innerHTML = "Error generating QR";
+    qrDiv.innerHTML = "Error generating QR";
   }
 }
 
-// Display QR
-function displayQR(qr) {
-  const qrContainer = document.getElementById('qrcode');
-  qrContainer.innerHTML = `<img src="${qr}" width="200">`;
-}
-
-// 🔥 NEW: Load history
+// ✅ HISTORY
 async function loadHistory() {
-  const res = await fetch(`${API_URL}/history`);
-  const data = await res.json();
+  const qrDiv = document.getElementById("qrcode");
+  qrDiv.innerHTML = "Loading history...";
 
-  console.log("History:", data);
+  try {
+    const res = await fetch(`${API_URL}/history`);
+    const data = await res.json();
+
+    qrDiv.innerHTML = "";
+
+    data.forEach(item => {
+      const img = document.createElement("img");
+      img.src = item.qr_code;
+      img.width = 100;
+      img.style.margin = "10px";
+      qrDiv.appendChild(img);
+    });
+
+  } catch (err) {
+    qrDiv.innerHTML = "Error loading history";
+  }
 }
 
-// 🔥 NEW: Download QR
+// ✅ DOWNLOAD
 function downloadQR() {
   const img = document.querySelector("#qrcode img");
   if (!img) return alert("Generate QR first");
 
   const link = document.createElement("a");
   link.href = img.src;
-  link.download = "qr-code.png";
+  link.download = "qr.png";
   link.click();
 }
