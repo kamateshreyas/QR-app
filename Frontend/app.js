@@ -82,16 +82,45 @@ async function generateQR() {
 
 // Display QR
 function displayQR(qr) {
-  const qrContainer = document.getElementById('qrcode');
-  qrContainer.innerHTML = `<img src="${qr}" width="200">`;
+  const qrcodeDiv = document.getElementById("qrcode");
+  qrcodeDiv.innerHTML = "";
+
+  const img = document.createElement("img");
+  img.src = qr;
+  img.width = 200;
+
+  qrcodeDiv.appendChild(img);
 }
 
 // 🔥 NEW: Load history
 async function loadHistory() {
-  const res = await fetch(`${API_URL}/history`);
-  const data = await res.json();
+    const qrcodeDiv = document.getElementById("qrcode");
 
-  console.log("History:", data);
+    qrcodeDiv.innerHTML = "Loading history...";
+
+    try {
+        const res = await fetch("http://localhost:3000/api/qr/history");
+        const data = await res.json();
+
+        qrcodeDiv.innerHTML = "";
+
+        if (!data.length) {
+            qrcodeDiv.innerHTML = "No history found";
+            return;
+        }
+
+        data.forEach(item => {
+            const img = document.createElement("img");
+            img.src = item.qr_code;
+            img.width = 100;
+            img.style.margin = "10px";
+            qrcodeDiv.appendChild(img);
+        });
+
+    } catch (err) {
+        console.error(err);
+        qrcodeDiv.innerHTML = "Error loading history";
+    }
 }
 
 // 🔥 NEW: Download QR
