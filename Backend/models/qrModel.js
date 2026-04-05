@@ -19,8 +19,10 @@ exports.getAllQR = async () => {
     .select("*")
     .order("created_at", { ascending: false });
 
+  console.log("Supabase data:", data);
+  console.log("Supabase error:", error);
+
   if (error) {
-    console.error("SUPABASE FETCH ERROR:", error);
     throw error;
   }
 

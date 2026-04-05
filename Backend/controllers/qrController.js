@@ -1,7 +1,7 @@
 const cloudinary = require("../config/cloudinary");
 const streamifier = require("streamifier");
 const QRCode = require("qrcode");
-const { createQR } = require("../models/qrModel");
+const { createQR, getAllQR } = require("../models/qrModel");
 
 exports.uploadFileQR = async (req, res) => {
   try {
