@@ -1,4 +1,5 @@
 const archiver = require("archiver");
+const unzipper = require("unzipper");
 const streamifier = require("streamifier");
 const cloudinary = require("../config/cloudinary");
 const QRCode = require("qrcode");
@@ -6,54 +7,49 @@ const { createQR } = require("../models/qrModel");
 
 exports.uploadFileQR = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-    // 📦 Create ZIP in memory
-    const archive = archiver("zip", { zlib: { level: 9 } });
+    let uploadedFiles = [];
 
-    const chunks = [];
-    archive.on("data", chunk => chunks.push(chunk));
+    const stream = streamifier.createReadStream(req.file.buffer);
 
-    archive.append(req.file.buffer, { name: req.file.originalname });
-    archive.finalize();
+    stream
+      .pipe(unzipper.Parse())
+      .on("entry", async (entry) => {
+        const fileBuffer = await entry.buffer();
 
-    archive.on("end", async () => {
-      const zipBuffer = Buffer.concat(chunks);
-
-      // ☁️ Upload ZIP to Cloudinary
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: "qr_uploads",
-          resource_type: "raw" // 🔥 IMPORTANT for zip
-        },
-        async (error, result) => {
-          if (error) {
-            console.error(error);
-            return res.status(500).json({ error: "Upload failed" });
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: "qr_files",
+            resource_type: "auto"
+          },
+          (err, result) => {
+            if (!err) {
+              uploadedFiles.push(result.secure_url);
+            }
           }
+        );
 
-          const fileUrl = result.secure_url;
+        streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+      })
+      .on("finish", async () => {
+        // Create viewer link
+        const idData = await createQR("zip", "zip_upload", "", uploadedFiles);
+        const id = idData[0].id;
 
-          // Generate QR
-          const qrImage = await QRCode.toDataURL(fileUrl);
+        const viewerUrl = `https://qr-frontend.netlify.app/view.html?id=${id}`;
 
-          await createQR("zip", fileUrl, qrImage);
+        const qrImage = await QRCode.toDataURL(viewerUrl);
 
-          res.json({
-            qr_code: qrImage,
-            fileUrl
-          });
-        }
-      );
-
-      streamifier.createReadStream(zipBuffer).pipe(stream);
-    });
+        res.json({
+          qr_code: qrImage,
+          viewerUrl
+        });
+      });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Zip conversion failed" });
+    res.status(500).json({ error: "ZIP processing failed" });
   }
 };
 

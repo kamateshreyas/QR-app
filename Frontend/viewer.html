@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QR File Viewer</title>
+</head>
+<body>
+  <h2>Files</h2>
+  <div id="viewer"></div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    const API_URL = "https://qr-backend-dg9e.onrender.com/api/qr";
+
+    fetch(`${API_URL}/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        const files = data.files;
+        const container = document.getElementById("viewer");
+
+        files.forEach(url => {
+          if (url.includes(".mp4")) {
+            container.innerHTML += `<video controls width="300" src="${url}"></video><br>`;
+          } else if (url.includes(".mp3")) {
+            container.innerHTML += `<audio controls src="${url}"></audio><br>`;
+          } else if (url.includes(".pdf")) {
+            container.innerHTML += `<iframe src="${url}" width="300" height="400"></iframe><br>`;
+          } else {
+            container.innerHTML += `<img src="${url}" width="200"><br>`;
+          }
+        });
+      });
+  </script>
+</body>
+</html>

@@ -1,30 +1,23 @@
 const supabase = require("../database/db");
 
-exports.createQR = async (type, content, qr_code) => {
+exports.createQR = async (type, content, qr_code, files = null) => {
   const { data, error } = await supabase
     .from("qr_codes")
-    .insert([{ type, content, qr_code }]);
+    .insert([{ type, content, qr_code, files }]);
 
-  if (error) {
-    console.error("SUPABASE INSERT ERROR:", error);
-    throw error;
-  }
+  if (error) throw error;
 
   return data;
 };
 
-exports.getAllQR = async () => {
+exports.getQRById = async (id) => {
   const { data, error } = await supabase
     .from("qr_codes")
     .select("*")
-    .order("created_at", { ascending: false });
+    .eq("id", id)
+    .single();
 
-  console.log("Supabase data:", data);
-  console.log("Supabase error:", error);
-
-  if (error) {
-    throw error;
-  }
+  if (error) throw error;
 
   return data;
 };
