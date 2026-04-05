@@ -29,7 +29,7 @@ exports.uploadFileQR = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const fileUrl = req.file.path;
+    const fileUrl = req.file.path || req.file.url;
     console.log("FILE URL:", fileUrl);
 
     const qrImage = await QRCode.toDataURL(fileUrl);
