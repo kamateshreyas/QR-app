@@ -6,7 +6,10 @@ const QRCode = require('qrcode');
 const app = express();
 
 // ✅ Middleware
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST"],
+}));
 app.use(express.json());
 
 // ✅ Static folder for files
