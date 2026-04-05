@@ -60,7 +60,7 @@ async function generateQR() {
       if (!file) return alert("Select a file");
 
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileInput.files[0]);
 
       res = await fetch(`${API_URL}/upload`, {
         method: "POST",

@@ -1,16 +1,19 @@
 const multer = require("multer");
-const path = require("path");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
 
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname); // .png, .jpg
+cloudinary.config({
+  cloud_name: process.env.deoeuejmo,
+  api_key: process.env.871368372698848,
+  api_secret: process.env.8U1t-YjS8gCkYZTL07ITBx1oDsA,
+});
 
-    // ✅ SAFE NAME (no spaces, no weird chars)
-    const safeName = Date.now() + ext;
-
-    cb(null, safeName);
-  }
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "qr-files",
+    resource_type: "auto", // supports image, video, pdf, audio
+  },
 });
 
 module.exports = multer({ storage });
