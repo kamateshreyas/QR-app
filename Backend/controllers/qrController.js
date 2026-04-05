@@ -1,5 +1,6 @@
 const QRCode = require("qrcode");
 const qrModel = require("../models/qrModel");
+const { uploadToCloudinary } = require("../middleware/upload");
 
 // ✅ Generate QR (text/url)
 exports.generateQR = async (req, res) => {
@@ -28,8 +29,9 @@ exports.uploadFileQR = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
-
-    const fileUrl = req.file.secure_url;
+    
+    const result = await uploadToCloudinary(req.file.path);
+    const fileUrl = result.secure_url;
     console.log("FILE URL:", fileUrl);
 
     const qrImage = await QRCode.toDataURL(fileUrl);
