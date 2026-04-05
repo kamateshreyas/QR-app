@@ -70,15 +70,15 @@ async function generateQR() {
 
     if (!res.ok) {
       const err = await res.text();
-      console.error(err);
-      qrDiv.innerHTML = "Server error!";
+      console.error("Backend Error:", err);
+      qrDiv.innerHTML = "Server error: " + err;
       return;
     }
 
     const data = await res.json();
 
     // ✅ ONLY update once (NO clearing before)
-    qrDiv.innerHTML = `<img src="${data.qrCode}" width="200">`;
+    qrDiv.innerHTML = `<img src="${data.qr_code}" width="200">`;
 
   } catch (err) {
     console.error(err);
