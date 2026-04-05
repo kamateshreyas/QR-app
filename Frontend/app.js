@@ -1,4 +1,4 @@
-const API_URL = "http://https://qr-backend-dg9e.onrender.com/api/qr";
+const API_URL = "https://qr-backend-dg9e.onrender.com/api/qr";
 
 // ✅ Setup dropdown ONCE
 document.addEventListener("DOMContentLoaded", () => {
@@ -48,9 +48,9 @@ async function generateQR() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          type,
-          content: input.value
+          text: input.value
         })
+
       });
 
     } 
@@ -78,7 +78,7 @@ async function generateQR() {
     const data = await res.json();
 
     // ✅ ONLY update once (NO clearing before)
-    qrDiv.innerHTML = `<img src="${data.qrCode}" width="200">`;
+    qrDiv.innerHTML = `<img src="${data.qr}" width="200">`;
 
   } catch (err) {
     console.error(err);

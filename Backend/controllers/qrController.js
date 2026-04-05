@@ -2,19 +2,22 @@ const QRCode = require("qrcode");
 const qrModel = require("../models/qrModel");
 
 // ✅ Generate QR (text/url)
+const QRCode = require("qrcode");
+
 exports.generateQR = async (req, res) => {
   try {
-    const { type, content } = req.body;
+    const { text } = req.body;
 
-    const qrImage = await QRCode.toDataURL(content);
+    if (!text) {
+      return res.status(400).json({ error: "Text is required" });
+    }
 
-    // ✅ FIXED (await + correct params)
-    await qrModel.createQR(type, content, qrImage);
+    // ✅ NO FILE SYSTEM
+    const qr = await QRCode.toDataURL(text);
 
-    res.json({ qrCode: qrImage });
-
+    res.json({ qr });
   } catch (err) {
-    console.error(err);
+    console.error("QR ERROR:", err); // 🔥 will show in Render logs
     res.status(500).json({ error: "QR generation failed" });
   }
 };
