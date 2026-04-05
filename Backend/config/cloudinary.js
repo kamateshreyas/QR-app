@@ -1,5 +1,6 @@
 const cloudinary = require("cloudinary").v2;
 
+module.exports = supabase; // ✅ ADD THIS
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,

@@ -1,38 +1,20 @@
-const QRCode = require("qrcode");
 const cloudinary = require("../config/cloudinary");
 const streamifier = require("streamifier");
+const QRCode = require("qrcode");
+const { createQR } = require("../models/qrModel");
 
-// Generate QR for text
-exports.generateQR = async (req, res) => {
-  try {
-    const { text } = req.body;
-
-    if (!text) {
-      return res.status(400).json({ error: "Text is required" });
-    }
-
-    const qrImage = await QRCode.toDataURL(text);
-
-    res.json({ qr_code: qrImage });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "QR generation failed" });
-  }
-};
-
-// Upload file → Cloudinary → QR
 exports.uploadFileQR = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // Upload buffer to Cloudinary
-    const uploadStream = cloudinary.uploader.upload_stream(
+    // Upload to Cloudinary
+    const stream = cloudinary.uploader.upload_stream(
       { folder: "qr_uploads" },
       async (error, result) => {
         if (error) {
-          console.error(error);
+          console.error("Cloudinary Error:", error);
           return res.status(500).json({ error: "Cloudinary upload failed" });
         }
 
@@ -41,6 +23,10 @@ exports.uploadFileQR = async (req, res) => {
         // Generate QR
         const qrImage = await QRCode.toDataURL(fileUrl);
 
+        // ✅ SAVE TO SUPABASE USING MODEL
+        await createQR("file", fileUrl, qrImage);
+
+        // Send response
         res.json({
           qr_code: qrImage,
           fileUrl,
@@ -48,10 +34,41 @@ exports.uploadFileQR = async (req, res) => {
       }
     );
 
-    streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
+    streamifier.createReadStream(req.file.buffer).pipe(stream);
+
+  } catch (err) {
+    console.error("Upload Error:", err);
+    res.status(500).json({ error: "Upload failed" });
+  }
+};
+
+exports.generateQR = async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ error: "Text required" });
+    }
+
+    const qrImage = await QRCode.toDataURL(text);
+
+    // ✅ SAVE TEXT QR
+    await createQR("text", text, qrImage);
+
+    res.json({ qr_code: qrImage });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "File upload failed" });
+    res.status(500).json({ error: "QR generation failed" });
+  }
+};
+
+exports.getHistory = async (req, res) => {
+  try {
+    const data = await getAllQR();
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch history" });
   }
 };
