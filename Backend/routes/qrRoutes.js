@@ -1,8 +1,6 @@
 const express = require("express");
 const router = express.Router();
-
-// ✅ Import Cloudinary upload middleware (VERY IMPORTANT)
-const upload = require("../middleware/upload");
+const { upload } = require("../middleware/upload");
 
 // ✅ Import controller functions
 const {

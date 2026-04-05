@@ -1,6 +1,6 @@
 const QRCode = require("qrcode");
 const qrModel = require("../models/qrModel");
-
+const { upload, cloudinary } = require("../middleware/upload");
 // ✅ Generate QR (text/url)
 exports.generateQR = async (req, res) => {
   try {
@@ -21,25 +21,36 @@ exports.generateQR = async (req, res) => {
 };
 
 // ✅ Upload file + QR
+
 exports.uploadFileQR = async (req, res) => {
   try {
-    console.log("FILE:", req.file);
-
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const fileUrl = req.file.path;
-    console.log("FILE URL:", fileUrl);
+    // upload buffer to cloudinary
+    const result = await cloudinary.uploader.upload_stream(
+      { resource_type: "auto" },
+      async (error, result) => {
+        if (error) {
+          console.error(error);
+          return res.status(500).json({ error: "Upload failed" });
+        }
 
-    const qrImage = await QRCode.toDataURL(fileUrl);
+        const fileUrl = result.secure_url; // ✅ PUBLIC URL
 
-    await qrModel.createQR("file", fileUrl, qrImage);
+        const qrImage = await QRCode.toDataURL(fileUrl);
 
-    res.json({ qrCode: qrImage, fileUrl });
+        await qrModel.createQR("file", fileUrl, qrImage);
+
+        res.json({ qrCode: qrImage, fileUrl });
+      }
+    );
+
+    result.end(req.file.buffer);
 
   } catch (err) {
-    console.error("UPLOAD ERROR:", err);
+    console.error(err);
     res.status(500).json({ error: "File upload failed" });
   }
 };
