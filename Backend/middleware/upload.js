@@ -9,10 +9,10 @@ cloudinary.config({
 });
 
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+  cloudinary,
   params: {
     folder: "qr-files",
-    resource_type: "auto", // supports image, video, pdf, audio
+    resource_type: "auto",
   },
 });
 
