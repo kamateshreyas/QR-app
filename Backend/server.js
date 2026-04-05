@@ -4,7 +4,11 @@ const cors = require("cors");
 const qrRoutes = require("./routes/qrRoutes");
 const QRCode = require('qrcode');
 const app = express();
-
+app.use(cors({
+  origin: "https://qr-frontend.netlify.app",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
 // ✅ Middleware
 app.use(cors());
 app.use(express.json());
