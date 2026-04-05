@@ -71,7 +71,7 @@ async function generateQR() {
     if (!res.ok) {
       const err = await res.text();
       console.error("Backend Error:", err);
-      qrDiv.innerHTML = "Server error: " + err;
+      qrDiv.innerHTML = `Server error: ${err}`;
       return;
     }
 

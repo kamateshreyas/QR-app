@@ -8,7 +8,12 @@ const app = express();
 
 // CORS
 app.use(cors({
-  origin: "*",
+  origin: [
+    "http://localhost:5500",
+    "https://qr-3dr54z1uf-kamateshreyas-projects.vercel.app"
+  ],
+  methods: ["GET", "POST"],
+  credentials: true
 }));
 
 // JSON parsing
