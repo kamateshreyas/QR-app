@@ -2,8 +2,6 @@ const QRCode = require("qrcode");
 const qrModel = require("../models/qrModel");
 
 // ✅ Generate QR (text/url)
-const QRCode = require("qrcode");
-
 exports.generateQR = async (req, res) => {
   try {
     const { text } = req.body;

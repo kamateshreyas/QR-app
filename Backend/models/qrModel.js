@@ -1,31 +1,16 @@
 const db = require("../database/db");
 
-// ✅ CREATE QR ENTRY
-const createQR = (type, content, qrCode) => {
-  return new Promise((resolve, reject) => {
-    const sql = "INSERT INTO qr_codes (type, content, qr_code) VALUES (?, ?, ?)";
-
-    db.query(sql, [type, content, qrCode], (err, result) => {
-      if (err) return reject(err);
-      resolve(result);
-    });
-  });
+exports.createQR = async (type, content, qr) => {
+  const query = `
+    INSERT INTO qr_codes (type, content, qr_code)
+    VALUES ($1, $2, $3)
+  `;
+  await db.query(query, [type, content, qr]);
 };
 
-// ✅ GET HISTORY
-const getAllQR = () => {
-  return new Promise((resolve, reject) => {
-    const sql = "SELECT * FROM qr_codes ORDER BY id DESC";
-
-    db.query(sql, (err, results) => {
-      if (err) return reject(err);
-      resolve(results);
-    });
-  });
+exports.getAllQR = async () => {
+  const result = await db.query(
+    "SELECT * FROM qr_codes ORDER BY id DESC"
+  );
+  return result.rows;
 };
-
-module.exports = {
-  createQR,
-  getAllQR,
-};
-
