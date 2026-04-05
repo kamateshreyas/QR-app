@@ -1,7 +1,8 @@
-const cloudinary = require("../config/cloudinary");
+const archiver = require("archiver");
 const streamifier = require("streamifier");
+const cloudinary = require("../config/cloudinary");
 const QRCode = require("qrcode");
-const { createQR, getAllQR } = require("../models/qrModel");
+const { createQR } = require("../models/qrModel");
 
 exports.uploadFileQR = async (req, res) => {
   try {
@@ -9,36 +10,50 @@ exports.uploadFileQR = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // Upload to Cloudinary
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: "qr_uploads" },
-      async (error, result) => {
-        if (error) {
-          console.error("Cloudinary Error:", error);
-          return res.status(500).json({ error: "Cloudinary upload failed" });
+    // 📦 Create ZIP in memory
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    const chunks = [];
+    archive.on("data", chunk => chunks.push(chunk));
+
+    archive.append(req.file.buffer, { name: req.file.originalname });
+    archive.finalize();
+
+    archive.on("end", async () => {
+      const zipBuffer = Buffer.concat(chunks);
+
+      // ☁️ Upload ZIP to Cloudinary
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "qr_uploads",
+          resource_type: "raw" // 🔥 IMPORTANT for zip
+        },
+        async (error, result) => {
+          if (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Upload failed" });
+          }
+
+          const fileUrl = result.secure_url;
+
+          // Generate QR
+          const qrImage = await QRCode.toDataURL(fileUrl);
+
+          await createQR("zip", fileUrl, qrImage);
+
+          res.json({
+            qr_code: qrImage,
+            fileUrl
+          });
         }
+      );
 
-        const fileUrl = result.secure_url;
-
-        // Generate QR
-        const qrImage = await QRCode.toDataURL(fileUrl);
-
-        // ✅ SAVE TO SUPABASE USING MODEL
-        await createQR("file", fileUrl, qrImage);
-
-        // Send response
-        res.json({
-          qr_code: qrImage,
-          fileUrl,
-        });
-      }
-    );
-
-    streamifier.createReadStream(req.file.buffer).pipe(stream);
+      streamifier.createReadStream(zipBuffer).pipe(stream);
+    });
 
   } catch (err) {
-    console.error("Upload Error:", err);
-    res.status(500).json({ error: "Upload failed" });
+    console.error(err);
+    res.status(500).json({ error: "Zip conversion failed" });
   }
 };
 
