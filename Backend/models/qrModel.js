@@ -1,16 +1,28 @@
-const db = require("../database/db");
+const supabase = require("../database/db");
 
-exports.createQR = async (type, content, qr) => {
-  const query = `
-    INSERT INTO qr_codes (type, content, qr_code)
-    VALUES ($1, $2, $3)
-  `;
-  await db.query(query, [type, content, qr]);
+exports.createQR = async (type, content, qr_code) => {
+  const { data, error } = await supabase
+    .from("qr_codes")
+    .insert([{ type, content, qr_code }]);
+
+  if (error) {
+    console.error("SUPABASE INSERT ERROR:", error);
+    throw error;
+  }
+
+  return data;
 };
 
 exports.getAllQR = async () => {
-  const result = await db.query(
-    "SELECT * FROM qr_codes ORDER BY id DESC"
-  );
-  return result.rows;
+  const { data, error } = await supabase
+    .from("qr_codes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("SUPABASE FETCH ERROR:", error);
+    throw error;
+  }
+
+  return data;
 };

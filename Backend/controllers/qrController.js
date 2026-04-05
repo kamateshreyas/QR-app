@@ -23,11 +23,14 @@ exports.generateQR = async (req, res) => {
 // ✅ Upload file + QR
 exports.uploadFileQR = async (req, res) => {
   try {
+    console.log("FILE:", req.file);
+
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const fileUrl = req.file.path; // ✅ Cloudinary URL
+    const fileUrl = req.file.path;
+    console.log("FILE URL:", fileUrl);
 
     const qrImage = await QRCode.toDataURL(fileUrl);
 
@@ -36,7 +39,7 @@ exports.uploadFileQR = async (req, res) => {
     res.json({ qrCode: qrImage, fileUrl });
 
   } catch (err) {
-    console.error(err);
+    console.error("UPLOAD ERROR:", err);
     res.status(500).json({ error: "File upload failed" });
   }
 };
