@@ -1,55 +1,66 @@
 const archiver = require("archiver");
-const unzipper = require("unzipper");
 const streamifier = require("streamifier");
 const cloudinary = require("../config/cloudinary");
 const QRCode = require("qrcode");
-const { createQR } = require("../models/qrModel");
+const { createQR,getAllQR} = require("../models/qrModel");
 
 exports.uploadFileQR = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-    let uploadedFiles = [];
+    let zipBuffer;
 
-    const stream = streamifier.createReadStream(req.file.buffer);
+    // ✅ CHECK: if already ZIP
+    if (req.file.mimetype === "application/zip") {
+      zipBuffer = req.file.buffer;
+    } else {
+      // ✅ CONVERT NORMAL FILE → ZIP
+      const archive = archiver("zip", { zlib: { level: 9 } });
 
-    stream
-      .pipe(unzipper.Parse())
-      .on("entry", async (entry) => {
-        const fileBuffer = await entry.buffer();
+      const chunks = [];
 
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            folder: "qr_files",
-            resource_type: "auto"
-          },
-          (err, result) => {
-            if (!err) {
-              uploadedFiles.push(result.secure_url);
-            }
-          }
-        );
+      archive.append(req.file.buffer, { name: req.file.originalname });
 
-        streamifier.createReadStream(fileBuffer).pipe(uploadStream);
-      })
-      .on("finish", async () => {
-        // Create viewer link
-        const idData = await createQR("zip", "zip_upload", "", uploadedFiles);
-        const id = idData[0].id;
+      archive.on("data", (data) => chunks.push(data));
 
-        const viewerUrl = `https://qr-frontend.netlify.app/view.html?id=${id}`;
+      await archive.finalize();
 
-        const qrImage = await QRCode.toDataURL(viewerUrl);
+      zipBuffer = Buffer.concat(chunks);
+    }
 
-        res.json({
-          qr_code: qrImage,
-          viewerUrl
-        });
-      });
+    // ✅ UPLOAD ZIP TO CLOUDINARY
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "qr_files",
+          resource_type: "raw" // important for zip
+        },
+        (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        }
+      );
+
+      streamifier.createReadStream(zipBuffer).pipe(uploadStream);
+    });
+
+    // ✅ SAVE IN DB
+    const idData = await createQR("zip", uploadResult.secure_url, "");
+    const id = idData[0].id;
+
+    // ❗ FIXED frontend URL
+    const viewerUrl = `${process.env.FRONTEND_URL}/view.html?id=${id}`;
+
+    const qrImage = await QRCode.toDataURL(viewerUrl);
+
+    res.json({
+      qr_code: qrImage,
+      viewerUrl
+    });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "ZIP processing failed" });
+    res.status(500).json({ error: "File processing failed" });
   }
 };
 

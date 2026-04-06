@@ -7,30 +7,38 @@
   <h2>Files</h2>
   <div id="viewer"></div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-    const API_URL = "https://qr-backend-dg9e.onrender.com/api/qr";
+<script>
+async function loadFile() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
 
-    fetch(`${API_URL}/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        const files = data.files;
-        const container = document.getElementById("viewer");
+  const res = await fetch("https://your-backend-url/api/qr/history");
+  const data = await res.json();
 
-        files.forEach(url => {
-          if (url.includes(".mp4")) {
-            container.innerHTML += `<video controls width="300" src="${url}"></video><br>`;
-          } else if (url.includes(".mp3")) {
-            container.innerHTML += `<audio controls src="${url}"></audio><br>`;
-          } else if (url.includes(".pdf")) {
-            container.innerHTML += `<iframe src="${url}" width="300" height="400"></iframe><br>`;
-          } else {
-            container.innerHTML += `<img src="${url}" width="200"><br>`;
-          }
-        });
-      });
-  </script>
+  const file = data.find(item => item.id === id);
+
+  if (!file) return;
+
+  const zipUrl = file.content;
+
+  const zipRes = await fetch(zipUrl);
+  const blob = await zipRes.blob();
+
+  const zip = await JSZip.loadAsync(blob);
+
+  zip.forEach(async (relativePath, zipEntry) => {
+    const content = await zipEntry.async("blob");
+
+    const url = URL.createObjectURL(content);
+
+    // 🔥 AUTO OPEN FILE
+    window.open(url);
+  });
+}
+
+loadFile();
+</script>
 </body>
 </html>
