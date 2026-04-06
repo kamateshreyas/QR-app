@@ -10,7 +10,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:5500",
-    "https://qr-3dr54z1uf-kamateshreyas-projects.vercel.app"
+    "https://https://qr-app-chi-ten.vercel.app"
   ],
   methods: ["GET", "POST"],
   credentials: true
