@@ -93,16 +93,31 @@ async function loadHistory() {
 
   try {
     const res = await fetch(`${API_URL}/history`);
-    if (!res.ok) throw new Error("History failed");
+
+    // ✅ handle backend failure
+    if (!res.ok) {
+      qrDiv.innerHTML = "Error loading history";
+      return;
+    }
+
     const data = await res.json();
+
+    // ✅ handle invalid data
+    if (!Array.isArray(data) || data.length === 0) {
+      qrDiv.innerHTML = "No history found";
+      return;
+    }
+
     qrDiv.innerHTML = "";
 
     data.forEach(item => {
-      const img = document.createElement("img");
       if (!item.qr_code) return; // skip broken entries
+
+      const img = document.createElement("img");
       img.src = item.qr_code;
       img.width = 100;
       img.style.margin = "10px";
+
       qrDiv.appendChild(img);
     });
 
@@ -110,7 +125,6 @@ async function loadHistory() {
     qrDiv.innerHTML = "Error loading history";
   }
 }
-
 // ✅ DOWNLOAD
 function downloadQR() {
   const img = document.querySelector("#qrcode img");

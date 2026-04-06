@@ -43,7 +43,7 @@ exports.uploadFileQR = async (req, res) => {
 
     // Generate ID + QR
     const id = crypto.randomUUID();
-    const viewerUrl = `${process.env.FRONTEND_URL}/view.html?id=${id}`;
+    const viewerUrl = `${process.env.FRONTEND_URL}/view?id=${id}`;
     const qrImage = await QRCode.toDataURL(viewerUrl);
 
     // Save to DB
@@ -89,11 +89,14 @@ exports.getHistory = async (req, res) => {
   try {
     const data = await getAllQR();
 
-    if (!data) return res.json([]);
+    if (!data || !Array.isArray(data)) {
+      return res.json([]);
+    }
 
-    res.json(data);
+    return res.json(data);
+
   } catch (err) {
     console.error("HISTORY ERROR:", err);
-    res.status(500).json({ error: err.message });
+    return res.json([]); // ✅ NEVER break frontend
   }
 };
