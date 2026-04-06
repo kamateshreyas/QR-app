@@ -18,7 +18,7 @@ async function loadFile() {
   const data = await res.json();
 
   const file = data.find(item => String(item.id) === String(id));
-  if (!file) {
+  if (!file || !file.content) {
   document.getElementById("viewer").innerHTML = "File not found";
   return;
   }

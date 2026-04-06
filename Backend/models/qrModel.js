@@ -8,15 +8,12 @@ exports.createQR = async (type, content, qr_code = "", files = []) => {
         type,
         content,
         qr_code,
-        files
+        files: files || []
       }
     ])
     .select();
 
-  if (error) {
-    console.error("DB ERROR:", error);
-    throw error;
-  }
+  if (error) throw error;
 
   return data;
 };
@@ -24,11 +21,10 @@ exports.createQR = async (type, content, qr_code = "", files = []) => {
 exports.getAllQR = async () => {
   const { data, error } = await supabase
     .from("qr_codes")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*");
 
   if (error) {
-    console.error("GET HISTORY ERROR:", error);
+    console.error("SUPABASE ERROR:", error);
     throw error;
   }
 
