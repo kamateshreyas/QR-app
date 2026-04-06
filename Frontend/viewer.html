@@ -11,33 +11,58 @@
 
 <script>
 async function loadFile() {
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
 
-  const res = await fetch("https://qr-backend-dg9e.onrender.com/api/qr/history");
-  const data = await res.json();
+    if (!id) {
+      document.getElementById("viewer").innerHTML = "Invalid QR";
+      return;
+    }
 
-  const file = data.find(item => String(item.id) === String(id));
-  if (!file || !file.content) {
-    document.getElementById("viewer").innerHTML = "File not found or invalid data";
-    return;
+    const res = await fetch("https://qr-backend-dg9e.onrender.com/api/qr/history");
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch data");
+    }
+
+    const data = await res.json();
+
+    // ✅ FIX: string comparison
+    const file = data.find(item => String(item.id) === String(id));
+
+    if (!file || !file.content) {
+      document.getElementById("viewer").innerHTML = "File not found";
+      return;
+    }
+
+    const zipUrl = file.content;
+
+    const zipRes = await fetch(zipUrl);
+    const blob = await zipRes.blob();
+
+    const zip = await JSZip.loadAsync(blob);
+
+    const viewer = document.getElementById("viewer");
+    viewer.innerHTML = "";
+
+    zip.forEach(async (relativePath, zipEntry) => {
+      const content = await zipEntry.async("blob");
+      const url = URL.createObjectURL(content);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.textContent = relativePath;
+      link.target = "_blank";
+
+      viewer.appendChild(link);
+      viewer.appendChild(document.createElement("br"));
+    });
+
+  } catch (err) {
+    document.getElementById("viewer").innerHTML = "Error loading file";
+    console.error(err);
   }
-
-  const zipUrl = file.content;
-
-  const zipRes = await fetch(zipUrl);
-  const blob = await zipRes.blob();
-
-  const zip = await JSZip.loadAsync(blob);
-
-  zip.forEach(async (relativePath, zipEntry) => {
-    const content = await zipEntry.async("blob");
-
-    const url = URL.createObjectURL(content);
-
-    // 🔥 AUTO OPEN FILE
-    window.open(url);
-  });
 }
 
 loadFile();
