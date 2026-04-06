@@ -99,9 +99,9 @@ async function loadHistory() {
       qrDiv.innerHTML = "Error loading history";
       return;
     }
-
     const data = await res.json();
-
+    console.log(data.viewerUrl);
+    
     // ✅ handle invalid data
     if (!Array.isArray(data) || data.length === 0) {
       qrDiv.innerHTML = "No history found";

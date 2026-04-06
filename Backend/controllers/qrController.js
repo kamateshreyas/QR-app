@@ -43,7 +43,7 @@ exports.uploadFileQR = async (req, res) => {
 
     // Generate ID + QR
     const id = crypto.randomUUID();
-    const viewerUrl = `${process.env.FRONTEND_URL}/view?id=${id}`;
+    const viewerUrl = `${process.env.FRONTEND_URL}/viewer.html?id=${id}`;
     const qrImage = await QRCode.toDataURL(viewerUrl);
 
     // Save to DB
@@ -98,5 +98,22 @@ exports.getHistory = async (req, res) => {
   } catch (err) {
     console.error("HISTORY ERROR:", err);
     return res.json([]); // ✅ NEVER break frontend
+  }
+};
+exports.getQRById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from("qr_codes")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) return res.status(404).json({ error: "Not found" });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
   }
 };

@@ -21,12 +21,13 @@ exports.createQR = async (type, content, qr_code = "", files = []) => {
 exports.getAllQR = async () => {
   const { data, error } = await supabase
     .from("qr_codes")
-    .select("*");
+    .select("*")
+    .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("SUPABASE ERROR:", error);
-    throw error;
+    console.error(error);
+    return [];
   }
 
-  return data || [];
+  return data;
 };
