@@ -12,14 +12,13 @@ exports.uploadFileQR = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    let fileBuffer = req.file.buffer;
-    let fileType = "zip";
+    const isLarge = req.file.size > 10 * 1024 * 1024; 
 
-    // ✅ CHECK IF IMAGE
-    if (req.file.mimetype.startsWith("image")) {
-      fileType = "image";
-    } else {
-      // ✅ convert to zip ONLY if not image
+    let bufferToUpload = req.file.buffer;
+    let type = "file";
+
+    // ✅ Convert to ZIP if large
+    if (isLarge) {
       const archive = archiver("zip", { zlib: { level: 9 } });
       const chunks = [];
 
@@ -32,41 +31,37 @@ exports.uploadFileQR = async (req, res) => {
         archive.finalize();
       });
 
-      fileBuffer = Buffer.concat(chunks);
+      bufferToUpload = Buffer.concat(chunks);
+      type = "zip";
     }
 
-    // ✅ upload correct buffer
+    // ✅ Upload to Cloudinary
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: "qr_files",
-          resource_type: "auto" // ✅ IMPORTANT
+          resource_type: "auto" // 🔥 IMPORTANT (handles all types)
         },
         (err, result) => (err ? reject(err) : resolve(result))
       );
 
-      streamifier.createReadStream(fileBuffer).pipe(stream);
+      streamifier.createReadStream(bufferToUpload).pipe(stream);
     });
 
-    // ✅ generate id + QR
+    // ✅ Generate ID + QR
     const id = crypto.randomUUID();
     const viewerUrl = `${process.env.FRONTEND_URL}/viewer.html?id=${id}`;
     const qrImage = await QRCode.toDataURL(viewerUrl);
 
-    // ✅ SAVE CORRECT TYPE
-    const { error } = await supabase.from("qr_codes").insert([
+    // ✅ Save to DB
+    await supabase.from("qr_codes").insert([
       {
         id,
-        type: fileType, // ✅ FIXED
+        type,
         content: uploadResult.secure_url,
         qr_code: qrImage
       }
     ]);
-
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ error: "DB insert failed" });
-    }
 
     return res.json({ qr_code: qrImage, viewerUrl });
 
@@ -75,7 +70,6 @@ exports.uploadFileQR = async (req, res) => {
     return res.status(500).json({ error: "File processing failed" });
   }
 };
-
 exports.generateQR = async (req, res) => {
   try {
     const { text } = req.body;
