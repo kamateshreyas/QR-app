@@ -37,16 +37,13 @@ exports.uploadFileQR = async (req, res) => {
 
     // ✅ Upload to Cloudinary
     const uploadResult = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: "qr_files",
-          resource_type: "auto" // 🔥 IMPORTANT (handles all types)
-        },
-        (err, result) => (err ? reject(err) : resolve(result))
-      );
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "qr_files", resource_type: "auto" }, // ✅ FIX
+      (err, result) => (err ? reject(err) : resolve(result))
+    );
 
-      streamifier.createReadStream(bufferToUpload).pipe(stream);
-    });
+  streamifier.createReadStream(zipBuffer).pipe(stream);
+});
 
     // ✅ Generate ID + QR
     const id = crypto.randomUUID();
