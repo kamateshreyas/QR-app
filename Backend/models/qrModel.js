@@ -8,7 +8,6 @@ exports.createQR = async (type, content, qr_code = "", files = []) => {
         type,
         content,
         qr_code,
-        files: files || []
       }
     ])
     .select();
