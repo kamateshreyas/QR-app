@@ -93,8 +93,8 @@ async function loadHistory() {
 
   try {
     const res = await fetch(`${API_URL}/history`);
+    if (!res.ok) throw new Error("History failed");
     const data = await res.json();
-
     qrDiv.innerHTML = "";
 
     data.forEach(item => {

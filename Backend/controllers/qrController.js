@@ -96,12 +96,9 @@ exports.generateQR = async (req, res) => {
 exports.getHistory = async (req, res) => {
   try {
     const data = await getAllQR();
-    if (!data) {
-      return res.status(500).json({ error: "No data found" });
-    }
     res.json(data);
   } catch (err) {
-    console.error(err);
+    console.error("HISTORY ERROR:", err);
     res.status(500).json({ error: "Failed to fetch history" });
   }
 };

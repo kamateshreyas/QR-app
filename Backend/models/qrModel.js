@@ -21,14 +21,16 @@ exports.createQR = async (type, content, qr_code = "", files = []) => {
   return data;
 };
 
-exports.getQRById = async (id) => {
+exports.getAllQR = async () => {
   const { data, error } = await supabase
     .from("qr_codes")
     .select("*")
-    .eq("id", id)
-    .single();
+    .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error("GET HISTORY ERROR:", error);
+    throw error;
+  }
 
-  return data;
+  return data || [];
 };

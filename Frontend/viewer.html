@@ -17,9 +17,11 @@ async function loadFile() {
   const res = await fetch("https://qr-backend-dg9e.onrender.com/api/qr/history");
   const data = await res.json();
 
-  const file = data.find(item => item.id === id);
-
-  if (!file) return;
+  const file = data.find(item => String(item.id) === String(id));
+  if (!file) {
+  document.getElementById("viewer").innerHTML = "File not found";
+  return;
+  }
 
   const zipUrl = file.content;
 
