@@ -19,13 +19,8 @@ async function loadFile() {
       document.getElementById("viewer").innerHTML = "Invalid QR";
       return;
     }
-    
+
     const res = await fetch(`https://qr-backend-dg9e.onrender.com/api/qr/${id}`);
-
-    if (!res.ok) {
-      throw new Error("File not found");
-    }
-
     const file = await res.json();
 
     if (!file || !file.content) {
@@ -33,37 +28,57 @@ async function loadFile() {
       return;
     }
 
-    const zipUrl = file.content;
-
     const viewer = document.getElementById("viewer");
     viewer.innerHTML = "";
 
-    if (file.type === "image") {
-      // ✅ Show image directly
-      const img = document.createElement("img");
-      img.src = file.content;
-      img.style.maxWidth = "300px";
-      viewer.appendChild(img);
+    const url = file.content;
 
-    } else {
-      // ✅ Handle ZIP
-      const zipRes = await fetch(file.content);
+    // 🔥 CHECK FILE TYPE
+    if (url.endsWith(".zip")) {
+      const zipRes = await fetch(url);
       const blob = await zipRes.blob();
 
       const zip = await JSZip.loadAsync(blob);
 
-      zip.forEach(async (relativePath, zipEntry) => {
-        const content = await zipEntry.async("blob");
-        const url = URL.createObjectURL(content);
+      zip.forEach(async (path, entry) => {
+        const content = await entry.async("blob");
+        const fileUrl = URL.createObjectURL(content);
 
         const link = document.createElement("a");
-        link.href = url;
-        link.textContent = relativePath;
+        link.href = fileUrl;
+        link.textContent = path;
         link.target = "_blank";
 
         viewer.appendChild(link);
         viewer.appendChild(document.createElement("br"));
       });
+
+    } else if (url.match(/\.(jpg|jpeg|png|gif)$/)) {
+      const img = document.createElement("img");
+      img.src = url;
+      img.width = 300;
+      viewer.appendChild(img);
+
+    } else if (url.match(/\.(mp3|wav)$/)) {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.src = url;
+      viewer.appendChild(audio);
+
+    } else if (url.match(/\.pdf$/)) {
+      const iframe = document.createElement("iframe");
+      iframe.src = url;
+      iframe.width = "100%";
+      iframe.height = "500px";
+      viewer.appendChild(iframe);
+
+    } else {
+      // fallback
+      const link = document.createElement("a");
+      link.href = url;
+      link.textContent = "Download File";
+      link.target = "_blank";
+      viewer.appendChild(link);
     }
 
   } catch (err) {
