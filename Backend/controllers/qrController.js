@@ -3,7 +3,8 @@ const streamifier = require("streamifier");
 const cloudinary = require("../config/cloudinary");
 const QRCode = require("qrcode");
 const { createQR,getAllQR} = require("../models/qrModel");
-const {supabase}=require("../database/db")
+const supabase =require("../database/db")
+const crypto = require("crypto");
 
 exports.uploadFileQR = async (req, res) => {
   try {
@@ -11,11 +12,10 @@ exports.uploadFileQR = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    let zipBuffer;
+    let zipBuffer = req.file.buffer;
 
-    if (req.file.mimetype === "application/zip") {
-      zipBuffer = req.file.buffer;
-    } else {
+    // Convert to ZIP if not already
+    if (req.file.mimetype !== "application/zip") {
       const archive = archiver("zip", { zlib: { level: 9 } });
       const chunks = [];
 
@@ -33,43 +33,30 @@ exports.uploadFileQR = async (req, res) => {
 
     // Upload to Cloudinary
     const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: "qr_files",
-          resource_type: "raw"
-        },
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "qr_files", resource_type: "raw" },
+        (err, result) => (err ? reject(err) : resolve(result))
       );
 
-      streamifier.createReadStream(zipBuffer).pipe(uploadStream);
+      streamifier.createReadStream(zipBuffer).pipe(stream);
     });
 
-    // ✅ FIRST insert to DB (without QR)
-    const idData = await createQR("zip", uploadResult.secure_url, "");
-    const id = idData?.[0]?.id;
-
-    if (!id) {
-      return res.status(500).json({ error: "DB insert failed" });
-    }
-
-    // ✅ Generate QR with correct id
+    // Generate ID + QR
+    const id = crypto.randomUUID();
     const viewerUrl = `${process.env.FRONTEND_URL}/view.html?id=${id}`;
     const qrImage = await QRCode.toDataURL(viewerUrl);
 
-    // ✅ UPDATE SAME ROW with QR (IMPORTANT)
-    await supabase
-      .from("qr_codes")
-      .update({ qr_code: qrImage })
-      .eq("id", id);
+    // Save to DB
+    await supabase.from("qr_codes").insert([
+      {
+        id,
+        type: "zip",
+        content: uploadResult.secure_url,
+        qr_code: qrImage
+      }
+    ]);
 
-    // ✅ ONLY ONE RESPONSE
-    return res.json({
-      qr_code: qrImage,
-      viewerUrl
-    });
+    return res.json({ qr_code: qrImage, viewerUrl });
 
   } catch (err) {
     console.error("UPLOAD ERROR:", err);
