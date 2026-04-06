@@ -49,17 +49,29 @@ exports.uploadFileQR = async (req, res) => {
     });
 
     // ✅ SAVE IN DB
-    const idData = await createQR("zip", uploadResult.secure_url, "");
+    c// ❗ FIRST create viewer URL (temporary id not needed yet)
+    const tempId = Date.now(); // temporary unique id
+    const viewerUrl = `${process.env.FRONTEND_URL}/view.html?id=${tempId}`;
+
+    // ✅ GENERATE QR FIRST
+    const qrImage = await QRCode.toDataURL(viewerUrl);
+
+    // ✅ SAVE IN DB WITH QR
+    const idData = await createQR("zip", uploadResult.secure_url, qrImage);
     const id = idData?.[0]?.id;
 
     if (!id) {
       return res.status(500).json({ error: "DB insert failed" });
     }
 
-    // ❗ FIXED frontend URL
-    const viewerUrl = `${process.env.FRONTEND_URL}/view.html?id=${id}`;
+    // ❗ OPTIONAL: regenerate QR with real id (better)
+    const finalViewerUrl = `${process.env.FRONTEND_URL}/view.html?id=${id}`;
+    const finalQR = await QRCode.toDataURL(finalViewerUrl);
 
-    const qrImage = await QRCode.toDataURL(viewerUrl);
+res.json({
+  qr_code: finalQR,
+  viewerUrl: finalViewerUrl
+});
 
     res.json({
       qr_code: qrImage,

@@ -99,6 +99,7 @@ async function loadHistory() {
 
     data.forEach(item => {
       const img = document.createElement("img");
+      if (!item.qr_code) return; // skip broken entries
       img.src = item.qr_code;
       img.width = 100;
       img.style.margin = "10px";

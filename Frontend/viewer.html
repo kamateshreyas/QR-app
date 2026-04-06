@@ -19,8 +19,8 @@ async function loadFile() {
 
   const file = data.find(item => String(item.id) === String(id));
   if (!file || !file.content) {
-  document.getElementById("viewer").innerHTML = "File not found";
-  return;
+    document.getElementById("viewer").innerHTML = "File not found or invalid data";
+    return;
   }
 
   const zipUrl = file.content;
