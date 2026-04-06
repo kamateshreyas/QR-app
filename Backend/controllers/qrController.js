@@ -12,13 +12,10 @@ exports.uploadFileQR = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const isLarge = req.file.size > 10 * 1024 * 1024; 
+    let fileBuffer = req.file.buffer;
 
-    let bufferToUpload = req.file.buffer;
-    let type = "file";
-
-    // ✅ Convert to ZIP if large
-    if (isLarge) {
+    // ✅ If file > 8MB → convert to ZIP
+    if (req.file.size > 8 * 1024 * 1024) {
       const archive = archiver("zip", { zlib: { level: 9 } });
       const chunks = [];
 
@@ -31,34 +28,42 @@ exports.uploadFileQR = async (req, res) => {
         archive.finalize();
       });
 
-      bufferToUpload = Buffer.concat(chunks);
-      type = "zip";
+      fileBuffer = Buffer.concat(chunks);
     }
 
     // ✅ Upload to Cloudinary
     const uploadResult = await new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: "qr_files", resource_type: "auto" }, // ✅ FIX
-      (err, result) => (err ? reject(err) : resolve(result))
-    );
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "qr_files",
+          resource_type: "auto" // ✅ IMPORTANT FIX
+        },
+        (err, result) => (err ? reject(err) : resolve(result))
+      );
 
-  streamifier.createReadStream(zipBuffer).pipe(stream);
-});
+      streamifier.createReadStream(fileBuffer).pipe(stream);
+    });
 
-    // ✅ Generate ID + QR
+    // ✅ Generate ID
     const id = crypto.randomUUID();
+
     const viewerUrl = `${process.env.FRONTEND_URL}/viewer.html?id=${id}`;
     const qrImage = await QRCode.toDataURL(viewerUrl);
 
     // ✅ Save to DB
-    await supabase.from("qr_codes").insert([
+    const { error } = await supabase.from("qr_codes").insert([
       {
         id,
-        type,
+        type: req.file.mimetype,
         content: uploadResult.secure_url,
         qr_code: qrImage
       }
     ]);
+
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: "DB insert failed" });
+    }
 
     return res.json({ qr_code: qrImage, viewerUrl });
 
