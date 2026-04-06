@@ -21,9 +21,13 @@ exports.uploadFileQR = async (req, res) => {
 
       archive.append(req.file.buffer, { name: req.file.originalname });
 
-      archive.on("data", (data) => chunks.push(data));
+      await new Promise((resolve, reject) => {
+        archive.on("data", (data) => chunks.push(data));
+        archive.on("end", resolve);
+        archive.on("error", reject);
 
-      await archive.finalize();
+        archive.finalize();
+      });
 
       zipBuffer = Buffer.concat(chunks);
     }
@@ -46,7 +50,11 @@ exports.uploadFileQR = async (req, res) => {
 
     // ✅ SAVE IN DB
     const idData = await createQR("zip", uploadResult.secure_url, "");
-    const id = idData[0].id;
+    const id = idData?.[0]?.id;
+
+    if (!id) {
+      return res.status(500).json({ error: "DB insert failed" });
+    }
 
     // ❗ FIXED frontend URL
     const viewerUrl = `${process.env.FRONTEND_URL}/view.html?id=${id}`;
@@ -88,6 +96,9 @@ exports.generateQR = async (req, res) => {
 exports.getHistory = async (req, res) => {
   try {
     const data = await getAllQR();
+    if (!data) {
+      return res.status(500).json({ error: "No data found" });
+    }
     res.json(data);
   } catch (err) {
     console.error(err);
