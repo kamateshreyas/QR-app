@@ -34,7 +34,7 @@ async function loadFile() {
     const url = file.content;
 
     // 🔥 CHECK FILE TYPE
-    if (url.endsWith(".zip")) {
+    if (file.type === "zip"){
       const zipRes = await fetch(url);
       const blob = await zipRes.blob();
 
