@@ -14,7 +14,7 @@ async function loadFile() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
 
-  const res = await fetch("https://your-backend-url/api/qr/history");
+  const res = await fetch("https://qr-backend-dg9e.onrender.com/api/qr/history");
   const data = await res.json();
 
   const file = data.find(item => item.id === id);
