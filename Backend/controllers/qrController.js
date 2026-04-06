@@ -12,10 +12,14 @@ exports.uploadFileQR = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    let zipBuffer = req.file.buffer;
+    let fileBuffer = req.file.buffer;
+    let fileType = "zip";
 
-    // Convert to ZIP if not already
-    if (req.file.mimetype !== "application/zip") {
+    // ✅ CHECK IF IMAGE
+    if (req.file.mimetype.startsWith("image")) {
+      fileType = "image";
+    } else {
+      // ✅ convert to zip ONLY if not image
       const archive = archiver("zip", { zlib: { level: 9 } });
       const chunks = [];
 
@@ -28,33 +32,41 @@ exports.uploadFileQR = async (req, res) => {
         archive.finalize();
       });
 
-      zipBuffer = Buffer.concat(chunks);
+      fileBuffer = Buffer.concat(chunks);
     }
 
-    // Upload to Cloudinary
+    // ✅ upload correct buffer
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: "qr_files", resource_type: "raw" },
+        {
+          folder: "qr_files",
+          resource_type: "auto" // ✅ IMPORTANT
+        },
         (err, result) => (err ? reject(err) : resolve(result))
       );
 
-      streamifier.createReadStream(zipBuffer).pipe(stream);
+      streamifier.createReadStream(fileBuffer).pipe(stream);
     });
 
-    // Generate ID + QR
+    // ✅ generate id + QR
     const id = crypto.randomUUID();
     const viewerUrl = `${process.env.FRONTEND_URL}/viewer.html?id=${id}`;
     const qrImage = await QRCode.toDataURL(viewerUrl);
 
-    // Save to DB
-    await supabase.from("qr_codes").insert([
+    // ✅ SAVE CORRECT TYPE
+    const { error } = await supabase.from("qr_codes").insert([
       {
         id,
-        type: "zip",
+        type: fileType, // ✅ FIXED
         content: uploadResult.secure_url,
         qr_code: qrImage
       }
     ]);
+
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: "DB insert failed" });
+    }
 
     return res.json({ qr_code: qrImage, viewerUrl });
 

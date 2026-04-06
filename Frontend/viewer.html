@@ -35,26 +35,36 @@ async function loadFile() {
 
     const zipUrl = file.content;
 
-    const zipRes = await fetch(zipUrl);
-    const blob = await zipRes.blob();
-
-    const zip = await JSZip.loadAsync(blob);
-
     const viewer = document.getElementById("viewer");
     viewer.innerHTML = "";
 
-    zip.forEach(async (relativePath, zipEntry) => {
-      const content = await zipEntry.async("blob");
-      const url = URL.createObjectURL(content);
+    if (file.type === "image") {
+      // ✅ Show image directly
+      const img = document.createElement("img");
+      img.src = file.content;
+      img.style.maxWidth = "300px";
+      viewer.appendChild(img);
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.textContent = relativePath;
-      link.target = "_blank";
+    } else {
+      // ✅ Handle ZIP
+      const zipRes = await fetch(file.content);
+      const blob = await zipRes.blob();
 
-      viewer.appendChild(link);
-      viewer.appendChild(document.createElement("br"));
-    });
+      const zip = await JSZip.loadAsync(blob);
+
+      zip.forEach(async (relativePath, zipEntry) => {
+        const content = await zipEntry.async("blob");
+        const url = URL.createObjectURL(content);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.textContent = relativePath;
+        link.target = "_blank";
+
+        viewer.appendChild(link);
+        viewer.appendChild(document.createElement("br"));
+      });
+    }
 
   } catch (err) {
     document.getElementById("viewer").innerHTML = "Error loading file";
