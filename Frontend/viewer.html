@@ -66,11 +66,12 @@ async function loadFile() {
       viewer.appendChild(audio);
 
     } else if (url.match(/\.pdf$/)) {
-      const iframe = document.createElement("iframe");
-      iframe.src = url;
-      iframe.width = "100%";
-      iframe.height = "500px";
-      viewer.appendChild(iframe);
+      const link = document.createElement("a");
+      link.href = url;
+      link.textContent = "Open PDF";
+      link.target = "_blank";
+      link.style.fontSize = "18px";
+      viewer.appendChild(link);
 
     } else {
       // fallback
